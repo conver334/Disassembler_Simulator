@@ -55,16 +55,25 @@ void subOvf(int& result, int a, int b) {//有符号加法溢出
 }
 void fun_BEQ(int& index){//2
     if(gps[ins[index].rt] == gps[ins[index].rs])index+=ins[index].offset;
+<<<<<<< HEAD
     else index+=4;
+=======
+>>>>>>> 013c429
 }
 
 void fun_BLTZ(int& index){//0
     if(gps[ins[index].rs]<0) index+=ins[index].offset;
+<<<<<<< HEAD
     else index+=4;
 }
 void fun_BGTZ(int& index){//3
     if(gps[ins[index].rs]>0) index+=ins[index].offset;
     else index+=4;
+=======
+}
+void fun_BGTZ(int& index){//3
+    if(gps[ins[index].rs]>0) index+=ins[index].offset;
+>>>>>>> 013c429
 }
 
 void fun_LW(int& index){//5
@@ -75,7 +84,10 @@ void fun_LW(int& index){//5
     }catch(char* str){
         cout<<str<<endl;
     }
+<<<<<<< HEAD
     index+=4;
+=======
+>>>>>>> 013c429
 }
 void fun_SW(int& index){//6
     try{
@@ -85,11 +97,15 @@ void fun_SW(int& index){//6
     }catch(char* str){
         cout<<str<<endl;
     }
+<<<<<<< HEAD
     index+=4;
+=======
+>>>>>>> 013c429
 }
 
 void fun_SLL(int& index){//22
     gps[ins[index].rd] = gps[ins[index].rt]<<ins[index].sa;
+<<<<<<< HEAD
     index+=4;
 }
 void fun_SRL(int& index){//15 逻辑右移
@@ -99,6 +115,14 @@ void fun_SRL(int& index){//15 逻辑右移
 void fun_SRA(int& index){//16 算数右移
     gps[ins[index].rd] = gps[ins[index].rt]>>ins[index].sa;
     index+=4;
+=======
+}
+void fun_SRL(int& index){//15 逻辑右移
+    gps[ins[index].rd] = ((unsigned)gps[ins[index].rt])>>ins[index].sa;
+}
+void fun_SRA(int& index){//16 算数右移
+    gps[ins[index].rd] = gps[ins[index].rt]>>ins[index].sa;
+>>>>>>> 013c429
 }
 
 void fun_J(int& index){//0
@@ -114,7 +138,10 @@ void fun_BREAK(int& index){//14
 void fun_MUL(int& index){//4 9
     if(ins[index].raw[0][0]=='0')gps[ins[index].rd]=gps[ins[index].rs]*gps[ins[index].rt];  
     else gps[ins[index].rt]=gps[ins[index].rs]*ins[index].imm; 
+<<<<<<< HEAD
     index+=4;
+=======
+>>>>>>> 013c429
 }
 void fun_ADD(int& index){//7
     try{
@@ -139,20 +166,31 @@ void fun_SUB(int& index){//8
 void fun_AND(int& index){//10
     if(ins[index].raw[0][0]=='0') gps[ins[index].rd] = gps[ins[index].rs] & gps[ins[index].rt];  
     else gps[ins[index].rt] = gps[ins[index].rs] & ins[index].imm;
+<<<<<<< HEAD
     index+=4;
+=======
+>>>>>>> 013c429
 }
 void fun_NOR(int& index){
     if(ins[index].raw[0][0]=='0') gps[ins[index].rd] = ~(gps[ins[index].rs] | gps[ins[index].rt]);  
     else gps[ins[index].rt] = ~(gps[ins[index].rs] | ins[index].imm);
+<<<<<<< HEAD
     index+=4;
+=======
+>>>>>>> 013c429
 }
 void fun_SLT(int& index){
     if(ins[index].raw[0][0]=='0') gps[ins[index].rd] = gps[ins[index].rs]<gps[ins[index].rt]?1:0; 
     else gps[ins[index].rt] = gps[ins[index].rs]<ins[index].imm?1:0;
+<<<<<<< HEAD
     index+=4;
 }
 void fun_NOP(int& index){//23
     index+=4;
+=======
+}
+void fun_NOP(int& index){//23
+>>>>>>> 013c429
 }
 void (*func[])(int &) = {
     fun_BLTZ,fun_J,fun_BEQ,fun_BGTZ,fun_MUL,fun_LW,fun_SW, \
@@ -193,6 +231,7 @@ string SPECIAL0[10]={
     "000000" //SLL 
 };
 
+<<<<<<< HEAD
 
 void ins_print(int index,int ins_num){
     switch(index){
@@ -240,11 +279,60 @@ void ins_print(int index,int ins_num){
         break;
     case 13:
         printf("JR R%d\n",ins[ins_num].rs);
+=======
+void ins_print(int index,int ins_num){
+    switch(index){
+    case 0:
+        printf("BLTZ\tR%d, #%d\n",ins[ins_num].rs,ins[ins_num].offset);
+        break;
+    case 1:
+        printf("J\t#%d\n",ins[ins_num].imm);
+        break;
+    case 2:
+        printf("BEQ\tR%d, R%d, #%d\n",ins[ins_num].rs,ins[ins_num].rt,ins[ins_num].offset);
+        break;
+    case 3:
+        printf("BGTZ\tR%d, #%d\n",ins[ins_num].rs,ins[ins_num].offset);
+        break;
+    case 4: case 9:
+        if(ins[ins_num].raw[0][0]=='0')printf("MUL\tR%d, R%d, R%d\n",ins[ins_num].rd,ins[ins_num].rs,ins[ins_num].rt);
+        else printf("MUL\tR%d, R%d, #%d\n",ins[ins_num].rt,ins[ins_num].rs,ins[ins_num].imm);
+        break;
+    case 5:
+        printf("LW\tR%d, %d(R%d)\n",ins[ins_num].rt,ins[ins_num].offset,ins[ins_num].rs);
+        break;
+    case 6:
+        printf("SW\tR%d, %d(R%d)\n",ins[ins_num].rt,ins[ins_num].offset,ins[ins_num].rs);
+        break;
+    case 7: case 17:
+        if(ins[ins_num].raw[0][0]=='0')printf("ADD\tR%d, R%d, R%d\n",ins[ins_num].rd,ins[ins_num].rs,ins[ins_num].rt);
+        else printf("ADD\tR%d, R%d, #%d\n",ins[ins_num].rt,ins[ins_num].rs,ins[ins_num].imm);
+        break;
+    case 8: case 18:
+        if(ins[ins_num].raw[0][0]=='0')printf("SUB\tR%d, R%d, R%d\n",ins[ins_num].rd,ins[ins_num].rs,ins[ins_num].rt);
+        else printf("SUB\tR%d, R%d, #%d\n",ins[ins_num].rt,ins[ins_num].rs,ins[ins_num].imm);
+        break;
+    case 10: case 19:
+        if(ins[ins_num].raw[0][0]=='0')printf("AND\tR%d, R%d, R%d\n",ins[ins_num].rd,ins[ins_num].rs,ins[ins_num].rt);
+        else printf("AND\tR%d, R%d, #%d\n",ins[ins_num].rt,ins[ins_num].rs,ins[ins_num].imm);
+        break;
+    case 11: case 20:
+        if(ins[ins_num].raw[0][0]=='0')printf("NOR\tR%d, R%d, R%d\n",ins[ins_num].rd,ins[ins_num].rs,ins[ins_num].rt);
+        else printf("NOR\tR%d, R%d, #%d\n",ins[ins_num].rt,ins[ins_num].rs,ins[ins_num].imm);
+        break;
+    case 12: case 21:
+        if(ins[ins_num].raw[0][0]=='0')printf("SLT\tR%d, R%d, R%d\n",ins[ins_num].rd,ins[ins_num].rs,ins[ins_num].rt);
+        else printf("SLT\tR%d, R%d, #%d\n",ins[ins_num].rt,ins[ins_num].rs,ins[ins_num].imm);
+        break;
+    case 13:
+        printf("JR\tR%d\n",ins[ins_num].rs);
+>>>>>>> 013c429
         break;
     case 14:
         printf("BREAK\n");
         break;
     case 15:
+<<<<<<< HEAD
         printf("SRL R%d, R%d, #%d\n",ins[ins_num].rd,ins[ins_num].rt,ins[ins_num].sa);
         break;
     case 16:
@@ -252,6 +340,15 @@ void ins_print(int index,int ins_num){
         break;
     case 22:
         printf("SLL R%d, R%d, #%d\n",ins[ins_num].rd,ins[ins_num].rt,ins[ins_num].sa);
+=======
+        printf("SRL\tR%d, R%d, #%d\n",ins[ins_num].rd,ins[ins_num].rt,ins[ins_num].sa);
+        break;
+    case 16:
+        printf("SRA\tR%d, R%d, #%d\n",ins[ins_num].rd,ins[ins_num].rt,ins[ins_num].sa);  
+        break;
+    case 22:
+        printf("SLL\tR%d, R%d, #%d\n",ins[ins_num].rd,ins[ins_num].rt,ins[ins_num].sa);
+>>>>>>> 013c429
         break;
     case 23:
         printf("NOP\n");
@@ -266,7 +363,11 @@ void simulation_print(int ins_num){
     int r_num=0;
     while(r_num<32){
         printf("R%02d:",r_num);
+<<<<<<< HEAD
         for(int i=0;i<16;i++)printf("\t%d",gps[i]);
+=======
+        for(int i=0;i<16;i++)printf("\t%d",gps[i+r_num]);
+>>>>>>> 013c429
         printf("\n");
         r_num+=16;
     }
@@ -286,7 +387,14 @@ void simulation_run(){
         oldnow = now;
         func[ins[now].instype](now);
         simulation_print(oldnow);
+<<<<<<< HEAD
         if(ins[now].instype == 14) break;
+=======
+        circle+=1;
+        if(ins[now].instype == 14) break;
+        if(ins[oldnow].instype == 1 ||ins[oldnow].instype== 13)continue;
+        now += 4;
+>>>>>>> 013c429
     }
 }
 void disassembler_print(){
