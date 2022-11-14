@@ -179,70 +179,6 @@ string SPECIAL0[10]={
     "000000" //SLL 
 };
 
-void ins_print1(int index,int ins_num){
-    switch(index){
-    case 0:
-        printf("BLTZ R%d, #%d\n",ins[ins_num].rs,ins[ins_num].offset);
-        break;
-    case 1:
-        printf("J #%d\n",ins[ins_num].imm);
-        break;
-    case 2:
-        printf("BEQ R%d, R%d, #%d\n",ins[ins_num].rs,ins[ins_num].rt,ins[ins_num].offset);
-        break;
-    case 3:
-        printf("BGTZ R%d, #%d\n",ins[ins_num].rs,ins[ins_num].offset);
-        break;
-    case 4: case 9:
-        if(ins[ins_num].raw[0][0]=='0')printf("MUL R%d, R%d, R%d\n",ins[ins_num].rd,ins[ins_num].rs,ins[ins_num].rt);
-        else printf("MUL R%d, R%d, #%d\n",ins[ins_num].rt,ins[ins_num].rs,ins[ins_num].imm);
-        break;
-    case 5:
-        printf("LW R%d, %d(R%d)\n",ins[ins_num].rt,ins[ins_num].offset,ins[ins_num].rs);
-        break;
-    case 6:
-        printf("SW R%d, %d(R%d)\n",ins[ins_num].rt,ins[ins_num].offset,ins[ins_num].rs);
-        break;
-    case 7: case 17:
-        if(ins[ins_num].raw[0][0]=='0')printf("ADD R%d, R%d, R%d\n",ins[ins_num].rd,ins[ins_num].rs,ins[ins_num].rt);
-        else printf("ADD R%d, R%d, #%d\n",ins[ins_num].rt,ins[ins_num].rs,ins[ins_num].imm);
-        break;
-    case 8: case 18:
-        if(ins[ins_num].raw[0][0]=='0')printf("SUB R%d, R%d, R%d\n",ins[ins_num].rd,ins[ins_num].rs,ins[ins_num].rt);
-        else printf("SUB R%d, R%d, #%d\n",ins[ins_num].rt,ins[ins_num].rs,ins[ins_num].imm);
-        break;
-    case 10: case 19:
-        if(ins[ins_num].raw[0][0]=='0')printf("AND R%d, R%d, R%d\n",ins[ins_num].rd,ins[ins_num].rs,ins[ins_num].rt);
-        else printf("AND R%d, R%d, #%d\n",ins[ins_num].rt,ins[ins_num].rs,ins[ins_num].imm);
-        break;
-    case 11: case 20:
-        if(ins[ins_num].raw[0][0]=='0')printf("NOR R%d, R%d, R%d\n",ins[ins_num].rd,ins[ins_num].rs,ins[ins_num].rt);
-        else printf("NOR R%d, R%d, #%d\n",ins[ins_num].rt,ins[ins_num].rs,ins[ins_num].imm);
-        break;
-    case 12: case 21:
-        if(ins[ins_num].raw[0][0]=='0')printf("SLT R%d, R%d, R%d\n",ins[ins_num].rd,ins[ins_num].rs,ins[ins_num].rt);
-        else printf("SLT R%d, R%d, #%d\n",ins[ins_num].rt,ins[ins_num].rs,ins[ins_num].imm);
-        break;
-    case 13:
-        printf("JR R%d\n",ins[ins_num].rs);
-        break;
-    case 14:
-        printf("BREAK\n");
-        break;
-    case 15:
-        printf("SRL R%d, R%d, #%d\n",ins[ins_num].rd,ins[ins_num].rt,ins[ins_num].sa);
-        break;
-    case 16:
-        printf("SRA R%d, R%d, #%d\n",ins[ins_num].rd,ins[ins_num].rt,ins[ins_num].sa);  
-        break;
-    case 22:
-        printf("SLL R%d, R%d, #%d\n",ins[ins_num].rd,ins[ins_num].rt,ins[ins_num].sa);
-        break;
-    case 23:
-        printf("NOP\n");
-    }
-}
-
 void ins_print(int index,int ins_num){
     switch(index){
     case 0:
@@ -348,7 +284,7 @@ void disassembler_print(){
             if(j!=5)cout<<' ';
         }
         printf("\t%d\t",i);
-        ins_print1(ins[i].instype,i);
+        ins_print(ins[i].instype,i);
     }
     for(int i=isword;i<data_num;i+=4){
         cout<<ins[i].whole<<'\t'<<i<<'\t'<<ins[i].imm<<endl;
