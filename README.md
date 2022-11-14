@@ -4,7 +4,7 @@ run with
 
 > sh test.sh
 
-#project requirement
+## project requirement
 
 In this project you will create a simple MIPS simulator which will perform the following two tasks:
 
@@ -22,7 +22,7 @@ You can use C, C++, Python or Java to implement your project. In any case, TA sh
 
 •  You should make a separate directory to work on your project (e.g., P1) and then use jar -cvf P1.jar * to create your jar file.
 
-## Instructions
+### Instructions
 
 For reference, please use the MIPS Instruction Set Architecture PDF (available from class project 1
 
@@ -112,7 +112,7 @@ The instructions and instruction arguments should be in capital letters. Display
 
 Because we will be using “diff -b**” to check your output versus ours, exactly follow the output formatting. TA may not be able to debug in case of any mismatch. In other words, mismatches can be treated as wrong output.
 
-## Sample Data
+### Sample Data
 
 The  course  project  webpage  contains  the  following  sample  programs/files  to  test  your disassembler/simulator.
 
