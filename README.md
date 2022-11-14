@@ -4,11 +4,13 @@ run with
 
 > sh test.sh
 
+if there are not problems, diff.txt and diff2.txt should be empty.
+
 ## project requirement
 
 In this project you will create a simple MIPS simulator which will perform the following two tasks:
 
-•  The first component of your implementation should be capable of loading a specified MIPS text file[1](#_bookmark1) and generating the assembly code equivalent to the input file (**disassembler**).
+•  The first component of your implementation should be capable of loading a specified MIPS text file(sample.txt) and generating the assembly code equivalent to the input file (**disassembler**).
 
 •  The second component should generate the instruction-by-instruction simulation of the MIPS code (**simulator**). It should also produce/print the contents of *registers* and *data* *memories* after execution of each instruction.
 
@@ -32,7 +34,7 @@ Your disassembler/simulator need to support the following two categories of MIPS
 
 | Category-1                                              | Category-2                       |
 | ------------------------------------------------------------ | ------------------------------------ |
-| * J, JR,  BEQ, BLTZ, BGTZ  * BREAK  * SW, LW  * SLL, SRL,  SRA  * NOP | * ADD, SUB  * MUL  * AND, NOR  * SLT |
+| J, JR,  BEQ, BLTZ, BGTZ;  BREAK  ; SW, LW  ; SLL, SRL,  SRA  ; NOP | ADD, SUB  ; MUL  ; AND, NOR  ;SLT |
 
 The  format of each category will be described in the following. The instruction format for Category- 1 remains the same as the MIPS Instruction Set Architecture PDF as shown in Table 1.
 
@@ -118,8 +120,8 @@ The  course  project  webpage  contains  the  following  sample  programs/files 
 
 - sample.txt : This is the input to your program.
 
-- disassembly.txt : This is what your program should produce as disassembled output.
+- disassembly-ori.txt : This is what your program should produce as disassembled output.
 
-- simulation.txt : This is what your program should output as simulation trace.
+- simulation-ori.txt : This is what your program should output as simulation trace.
 
  
