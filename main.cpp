@@ -6,9 +6,11 @@
 #include<cstdlib>
 #include<fstream>
 using namespace std;
+const int MAX_EXE = 10000;
 const int INS_SIZE=10000;
 const int INPUT = 10000;
-int gps[32]; //保存寄存器值
+const int REG_SIZE=32;
+int gps[REG_SIZE]; //保存寄存器值
 int pc=64;
 int data_num = 0,data_begin; //data数量,data开始的位置
 struct INSTRCUTION{ //指令
@@ -16,8 +18,10 @@ struct INSTRCUTION{ //指令
     int rs,rt,rd,imm,offset,sa;
     string raw[6],whole;
 }ins[INS_SIZE];
+int wgps[REG_SIZE],rgps[REG_SIZE],reg_status[REG_SIZE];
 
 int isword = 0; // isword = true 表示在读数据部分
+
 
 int BinaryToDecimal(const string& para){ // 无符号 二进制转十进制
     int slen = para.length();
@@ -147,6 +151,8 @@ void (*func[])(int &) = {
     fun_ADD,fun_SUB,fun_AND,fun_NOR,fun_SLT,\
     fun_SLL,fun_NOP
 };
+//指令所属的功能单元
+int belong_func = {0,0,0,0,2,3,3,1,1,2,1,1,1,   0,0,2,2,1,1,1,1,1,2}
 string SPECIAL[13]={
     "000001", //BLTZ
     "000010", //J
@@ -179,7 +185,8 @@ string SPECIAL0[10]={
     "000000" //SLL 
 };
 
-void ins_print(int index,int ins_num){
+void ins_print(int ins_num){
+    index = ins[ins_num].instype,
     switch(index){
     case 0:
         printf("BLTZ\tR%d, #%d\n",ins[ins_num].rs,ins[ins_num].offset);
@@ -277,6 +284,187 @@ void simulation_run(){
         now += 4;
     }
 }
+struct Buffer{
+    int ins_num,ti; //指令，取的时间
+}if_unit[1],pre_issue[4],pre_fun[4][2],post_fun[4];
+
+int pre_issue_num=0,pre_fun_num[4],delay[3]={1,2,1};
+int write_io = 0;
+bool Fetch(){
+    for(int cou=0;pre_issue_num<4,cou<2;cou++,pc+=4){
+        switch (ins[pc].instype){
+        case 14:
+            return true; //遇到break停止执行
+            break;
+        case 23:
+            continue;//nop 不用做任何事
+        case 1: case 13: case 2: case 0: case 3: //J JR BEQ BLTZ BGTZ
+            if_unit[0].ins_num = pc;
+            if_unit[0].ti = circle;
+            pc+=4
+            break;
+        default: //其他指令
+            pre_issue[pre_issue_num].ins_num = pc;
+            pre_issue[pre_issue_num].ti = circle;
+        }
+    }
+    return false;
+}
+void Issue_success(int pos){
+    int ins_num = pre_issue[pos].ins_num;
+    int ins_type = ins[ins_num].instype;
+    int ins_func = belong_func[ins_type];
+    //放到对应功能区
+    pre_fun[ins_func][pre_fun_num[ins_func]].ins_num = pre_issue[pos].ins_num;
+    pre_fun[ins_func][pre_fun_num[ins_func]].ti = circle;
+    pre_fun_num[ins_func]++;
+    //把issue的指令删掉
+    for(int i=pos;i<pre_issue_num-1;i++){ 
+        pre_issue[i].ins_num = pre_issue[i+1].num;
+        pre_issue[i].ti = pre_issue[i+1].ti;
+    }
+    pre_issue_num--;
+}
+/*
+不能issue的情况
+1. 功能没空
+2. 写目标是之前的写
+*/
+bool Issue(){
+    //done 已经发射的指令
+    for(int i=0,done=0;i<pre_issue_num,done<2;i++){
+        int now = pre_issue[i].ins_num;
+        int ins_num = pre_issue[pos].ins_num;
+        int ins_type = ins[ins_num].instype;
+        int ins_func = belong_func[ins_type];
+        if(pre_fun_num[ins_func]>=2 )continue;//功能有空
+        switch (ins[now].instype){
+        case 6://SW
+            bool ok = true;
+            for(int j=0;j<i;j++){
+                int check_now = pre_issue[j].ins_num;
+                if(pre_issue[check_now].ins_num == 6){
+                    ok = false;//sw指令前有sw没有issue
+                    break;
+                }
+            }
+            if(write_io==0 && ok && !wgps[ins[ins_num].rt]){ //写端口没有被占用, 资源都准备好了
+                Issue_success(i);
+                done++;
+                i--;
+            }
+            break;
+        case 5://LW
+            bool ok = true;
+            for(int j=0;j<i;j++){
+                int check_now = pre_issue[j].ins_num;
+                if(pre_issue[check_now].ins_num == 6){
+                    ok = false;//lw指令前有sw没有issue
+                    break;
+                }
+            }
+            //不确定这里要不要检查写端口占用
+            if(ok && !wgps[ins[ins_num].rt] && !wgps[ins[index].rs]){//资源准备好了, 没出现waw
+                Issue_success(i);
+                done++;
+                i--;
+            }
+            break;
+        
+        default:
+            break;
+        }
+    }
+}
+void pipeline_run(){
+    int pc = 64;
+    while(1){
+        if(Fetch())break;
+        if()
+        for(int i=0;i<4;i++){
+            if
+        }
+        oldnow = now;
+        func[ins[now].instype](now);
+        simulation_print(oldnow);
+        circle+=1;
+        if(ins[now].instype == 14) break;
+        if(ins[oldnow].instype == 1 ||ins[oldnow].instype== 13)continue;
+        now += 4;
+    }
+}
+void pipeline_print(int ins_num){
+    printf("--------------------\nCycle:%d\n\n",circle);
+    printf("IF Unit:\n");
+    printf("\t>Waiting Instruction:\n"); //!!没处理
+    printf("\t>Executed Instruction:\n"); //!!没处理
+    printf("Pre-Issue Buffer:\n");
+    for(int i=0;i<4;i++){
+        printf("Entry %d:",i);
+        if(pre_issue[i].ins_num>=0){
+            printf("[")
+            ins_print(pre_issue[i].ins_num);
+            printf("]");
+        }
+        printf("\n");
+    }
+    printf("Pre-ALU Queue\n");
+    for(int i=0;i<2;i++){
+        printf("Entry %d:",i);
+        if(pre_alu[i].ins_num>=0){
+            printf("[")
+            ins_print(pre_alu[i].ins_num);
+            printf("]");
+        }
+        printf("\n");
+    }
+    printf("Post-ALU Buffer:");
+    if(post_alu[i].ins_num>=0){
+        printf("[")
+        ins_print(post_alu[i].ins_num);
+        printf("]");
+    }
+    printf("\n");
+    printf("Pre-ALUB Queue\n");
+    for(int i=0;i<2;i++){
+        printf("Entry %d:",i);
+        if(pre_aluB[i].ins_num>=0){
+            printf("[")
+            ins_print(pre_aluB[i].ins_num);
+            printf("]");
+        }
+        printf("\n");
+    }
+    printf("Post-ALUB Buffer:");
+    if(post_aluB[i].ins_num>=0){
+        printf("[")
+        ins_print(post_aluB[i].ins_num);
+        printf("]");
+    }
+    printf("\n");
+    
+
+    printf("\nRegisters\n");
+    int r_num=0;
+    while(r_num<32){
+        printf("R%02d:",r_num);
+        for(int i=0;i<16;i++)printf("\t%d",gps[i+r_num]);
+        printf("\n");
+        r_num+=16;
+    }
+    printf("\nData\n");
+    r_num=isword;
+    while(r_num<data_num){
+        printf("%d:",r_num);
+        for(int i=0;i<8;i++)printf("\t%d",ins[r_num+(i<<2)].imm);
+        printf("\n");
+        r_num+=4*8;
+    }
+    printf("\n");
+}
+
+
+
 void disassembler_print(){
     for(int i=64;i<isword;i+=4){
         for(int j=0;j<6;j++){

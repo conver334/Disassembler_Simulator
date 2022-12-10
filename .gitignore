@@ -1,5 +1,6 @@
 main
-disassembly.txt
-simulation.txt
+# disassembly*.txt
+# simulation*.txt
 diff*
 .vscode
+# sample*.txt
