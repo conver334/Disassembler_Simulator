@@ -45,7 +45,7 @@ int SignedBinaryToDecimal(string para){ // 有符号 二进制转十进制
     }
     for(int i=1;i<slen;i++)num = (num<<1)+para[i]-'0';
     return num*flag;
-}
+}=-
 
 void addOvf(int& result, int a, int b) {//有符号加法溢出
     result = a + b;     
@@ -284,6 +284,33 @@ void simulation_run(){
         now += 4;
     }
 }
+struct Queue{
+    int queue[MAX_EXE],head,tail;
+    int pop(){return queue[head++];}
+    void push(int x){queue[tail++]=x;}
+}que[4];
+struct Column{
+    int index, inpre, inexe, inwrite;
+    int instype;
+    int des, src1, src2, srcd1, srcd2;
+};
+struct Table{
+    Column list[MAX_EXE];
+    int tnum;
+    int push(int x){
+        list[tnum].index = x;
+        list[tnum].inpre = circle;
+        list[tnum].instype = ins[x].instype;
+        switch (ins[x].instype){
+        case /* constant-expression */:
+            /* code */
+            break;
+        
+        default:
+            break;
+        }
+    }
+}table1;
 struct Buffer{
     int ins_num,ti; //指令，取的时间
 }if_unit[1],pre_issue[4],pre_fun[4][2],post_fun[4];
