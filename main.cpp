@@ -1,3 +1,9 @@
+/*
+编译命令：
+g++ main.cpp -o MIPSsim
+运行命令：
+MIPSsim inputfilename outputfilenam
+*/
 #include<iostream>
 #include<cstdio>
 #include<zlib.h>
@@ -100,13 +106,11 @@ void fun_SRA(int index){//16 算数右移
 }
 
 void fun_J(int index){//0
-    index = ins[index].imm;
-    usejump = 1;
+    pc = ins[index].imm;
 }
 
 void fun_JR(int index){//13
-    index = gps[ins[index].rs];
-    usejump = 1;
+    pc = gps[ins[index].rs];
 }
 void fun_BREAK(int index){//14
 }
@@ -275,6 +279,10 @@ struct Table{
         list[tnum].instype = ins[index].instype;
         list[tnum].inexe = list[tnum].inwrite = INF; //预设为无限大
         switch (ins[index].instype){
+            case 14:{
+                list[tnum].des = list[tnum].src[0] = list[tnum].src[1] =-1;
+                break;
+            }
             case 5: case 7: case 8: case 9: case 10: case 11: case 12:{ //lw add~slt 用立即数的
                 list[tnum].des = ins[index].rt;
                 list[tnum].src[0] = ins[index].rs;
@@ -324,11 +332,11 @@ bool Fetch(){
     if(!que[0].empty())return false; 
     for(int cou=0;pre_issue_num<4&&cou<2;cou++,pc+=4){
         switch (ins[pc].instype){
-            case 14:
-                return true; //遇到break停止执行
+            // case 14:
+            //     return true; //遇到break停止执行
             case 23:
                 continue;//nop 不用做任何事  
-            case 1: case 13: case 2: case 0: case 3: {//J JR BEQ BLTZ BGTZ
+            case 1: case 13: case 2: case 0: case 3: case 14:{//J JR BEQ BLTZ BGTZ BREAK
                 int nowtnum = table1.push(pc); //注意检查 b开头的那些对不对！！
                 que[0].push(nowtnum);
                 pc+=4;
@@ -414,19 +422,21 @@ void init(){
     for(int i=0;i<REG_SIZE;i++)wgps[i]=-1;
     for(int i=0;i<4;i++)pre_issue[i]=-1;
 }
-void Branch_exe(){
+bool Branch_exe(){
     if(!que[0].empty()){
         int now = que[0].queue[que[0].head];//执行pc跳转
+        if(table1.list[now].instype==14)return true;
         if(circle-table1.list[now].inexe>=1){
             func[table1.list[now].instype](table1.list[now].index);
             que[0].pop();
         }
     }
+    return false;
 }
 void Branch(){
     if(!que[0].empty()){
         int now = que[0].queue[que[0].head];//执行pc跳转
-        if(table1.list[now].inpre == circle)return;
+        // if(table1.list[now].inpre == circle)return; 根本不用等
         bool ok = true;
         for(int j=0;j<2;j++){
             if(table1.list[now].src[j]>=0){
@@ -446,13 +456,13 @@ void pipeline_print(){
     printf("\tWaiting Instruction:");
     if(!que[0].empty()){
         int now = que[0].queue[que[0].head];
-        if(table1.list[now].inexe==INF)ins_print(table1.list[now].index);
+        if(table1.list[now].inexe==INF){printf(" "); ins_print(table1.list[now].index);}
     }
     printf("\n");
     printf("\tExecuted Instruction:");
     if(!que[0].empty()){
         int now = que[0].queue[que[0].head];
-        if(table1.list[now].inexe!=INF)ins_print(table1.list[now].index);
+        if(table1.list[now].inexe!=INF){printf(" "); ins_print(table1.list[now].index);}
     }
     printf("\n");
     printf("Pre-Issue Buffer:\n");
@@ -506,8 +516,8 @@ void pipeline_run(){
     circle = 1;
     init();
     while(1){
-        Branch_exe();
-        if(Fetch())break;
+        if(Branch_exe())return;
+        Fetch();
         for(int i=0,cou=0;i<pre_issue_num&&cou<2;){
             if(Issue_check(i)){//检查是否满足发射条件
                 cou++; 
@@ -518,10 +528,6 @@ void pipeline_run(){
         Branch();
         Execute();
         pipeline_print();
-        if(usejump>0){//是否jump
-            pc = usejump;
-            usejump = 0;
-        }
         circle+=1;
     }
 }
@@ -541,10 +547,11 @@ void disassembler_print(){
 }
 
 int main(int argc, char** argv){
-    if(argc == 1){
-        printf("reading from input file\n");
+    if(argc != 3){
+        printf("Use: MIPSsim inputfilename outputfilename\n");
+        return 0;
     }
-    // freopen("disassembly.txt","w",stdout);
+    freopen(argv[2],"w",stdout);
     freopen(argv[1],"r",stdin);
     
     string buf;
@@ -587,11 +594,8 @@ int main(int argc, char** argv){
         ins_num+=4;
     }
     data_num=ins_num;
-    disassembler_print();
-    // fclose(stdout);
-    // freopen("simulation.txt","w",stdout);
     pipeline_run();
-    // fclose(stdout);
+    fclose(stdout);
     fclose(stdin);
     return 0;
 }

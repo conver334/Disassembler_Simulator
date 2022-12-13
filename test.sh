@@ -1,4 +1,3 @@
-g++ main.cpp -o main
-./main sample.txt
-diff -cb simulation.txt simulation-ori.txt >diff.txt
-diff -cb disassembly.txt disassembly2-ori.txt >diff2.txt
+g++ main.cpp -o MIPSsim
+./MIPSsim sample2.txt simulation.txt
+diff -cb simulation.txt simulation2-ori.txt >diff.txt
