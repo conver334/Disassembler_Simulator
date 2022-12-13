@@ -10,18 +10,19 @@ const int MAX_EXE = 10000;
 const int INS_SIZE=10000;
 const int INPUT = 10000;
 const int REG_SIZE=32;
+const int INF = 1000000;
 int gps[REG_SIZE]; //保存寄存器值
-int pc=64;
+int pc=64,usejump=0;
 int data_num = 0,data_begin; //data数量,data开始的位置
 struct INSTRCUTION{ //指令
     int instype;
     int rs,rt,rd,imm,offset,sa;
+    int des, src1, src2;
     string raw[6],whole;
 }ins[INS_SIZE];
-int wgps[REG_SIZE],rgps[REG_SIZE],reg_status[REG_SIZE];
+int wgps[REG_SIZE]; //功能单元中有没有人写他
 
 int isword = 0; // isword = true 表示在读数据部分
-
 
 int BinaryToDecimal(const string& para){ // 无符号 二进制转十进制
     int slen = para.length();
@@ -45,7 +46,7 @@ int SignedBinaryToDecimal(string para){ // 有符号 二进制转十进制
     }
     for(int i=1;i<slen;i++)num = (num<<1)+para[i]-'0';
     return num*flag;
-}=-
+}
 
 void addOvf(int& result, int a, int b) {//有符号加法溢出
     result = a + b;     
@@ -100,10 +101,12 @@ void fun_SRA(int& index){//16 算数右移
 
 void fun_J(int& index){//0
     index = ins[index].imm;
+    usejump = 1;
 }
 
 void fun_JR(int& index){//13
     index = gps[ins[index].rs];
+    usejump = 1;
 }
 void fun_BREAK(int& index){//14
 }
@@ -112,7 +115,7 @@ void fun_MUL(int& index){//4 9
     if(ins[index].raw[0][0]=='0')gps[ins[index].rd]=gps[ins[index].rs]*gps[ins[index].rt];  
     else gps[ins[index].rt]=gps[ins[index].rs]*ins[index].imm; 
 }
-void fun_ADD(int& index){//7
+void fun_ADD(int& index){//7 17
     try{
         if(ins[index].raw[0][0]=='0')addOvf(gps[ins[index].rd],gps[ins[index].rs],gps[ins[index].rt]);  
         else addOvf(gps[ins[index].rt],gps[ins[index].rs],ins[index].imm); 
@@ -121,7 +124,7 @@ void fun_ADD(int& index){//7
         cout<<str<<endl;
     }
 }
-void fun_SUB(int& index){//8
+void fun_SUB(int& index){//8 18
     try{
         if(ins[index].raw[0][0]=='0')subOvf(gps[ins[index].rd],gps[ins[index].rs],gps[ins[index].rt]);  
         else subOvf(gps[ins[index].rt],gps[ins[index].rs],ins[index].imm); 
@@ -130,29 +133,30 @@ void fun_SUB(int& index){//8
         cout<<str<<endl;
     }
 }
-void fun_AND(int& index){//10
+void fun_AND(int& index){//10 19
     if(ins[index].raw[0][0]=='0') gps[ins[index].rd] = gps[ins[index].rs] & gps[ins[index].rt];  
     else gps[ins[index].rt] = gps[ins[index].rs] & ins[index].imm;
 }
-void fun_NOR(int& index){
+void fun_NOR(int& index){//11 20 
     if(ins[index].raw[0][0]=='0') gps[ins[index].rd] = ~(gps[ins[index].rs] | gps[ins[index].rt]);  
     else gps[ins[index].rt] = ~(gps[ins[index].rs] | ins[index].imm);
 }
-void fun_SLT(int& index){
+void fun_SLT(int& index){//12 21
     if(ins[index].raw[0][0]=='0') gps[ins[index].rd] = gps[ins[index].rs]<gps[ins[index].rt]?1:0; 
     else gps[ins[index].rt] = gps[ins[index].rs]<ins[index].imm?1:0;
 }
 void fun_NOP(int& index){//23
 }
+// 7 6 4 5 2
 void (*func[])(int &) = {
-    fun_BLTZ,fun_J,fun_BEQ,fun_BGTZ,fun_MUL,fun_LW,fun_SW, \
-    fun_ADD,fun_SUB,fun_MUL,fun_AND,fun_NOR,fun_SLT,\
-    fun_JR,fun_BREAK,fun_SRL,fun_SRA,\
-    fun_ADD,fun_SUB,fun_AND,fun_NOR,fun_SLT,\
-    fun_SLL,fun_NOP
+    fun_BLTZ,fun_J,fun_BEQ,fun_BGTZ,fun_MUL,fun_LW,fun_SW, 
+    fun_ADD,fun_SUB,fun_MUL,fun_AND,fun_NOR,fun_SLT,
+    fun_JR,fun_BREAK,fun_SRL,fun_SRA,
+    fun_ADD,fun_SUB,fun_AND,fun_NOR,fun_SLT,
+    fun_SLL,fun_NOP 
 };
 //指令所属的功能单元
-int belong_func = {0,0,0,0,2,3,3,1,1,2,1,1,1,   0,0,2,2,1,1,1,1,1,2}
+int belong_func[23] = {0,0,0,0,2,3,3,1,1,2,1,1,1,   0,0,2,2,1,1,1,1,1,2};
 string SPECIAL[13]={
     "000001", //BLTZ
     "000010", //J
@@ -186,298 +190,298 @@ string SPECIAL0[10]={
 };
 
 void ins_print(int ins_num){
-    index = ins[ins_num].instype,
+    int index = ins[ins_num].instype;
     switch(index){
     case 0:
-        printf("BLTZ\tR%d, #%d\n",ins[ins_num].rs,ins[ins_num].offset);
+        printf("BLTZ\tR%d, #%d",ins[ins_num].rs,ins[ins_num].offset);
         break;
     case 1:
-        printf("J\t#%d\n",ins[ins_num].imm);
+        printf("J\t#%d",ins[ins_num].imm);
         break;
     case 2:
-        printf("BEQ\tR%d, R%d, #%d\n",ins[ins_num].rs,ins[ins_num].rt,ins[ins_num].offset);
+        printf("BEQ\tR%d, R%d, #%d",ins[ins_num].rs,ins[ins_num].rt,ins[ins_num].offset);
         break;
     case 3:
-        printf("BGTZ\tR%d, #%d\n",ins[ins_num].rs,ins[ins_num].offset);
+        printf("BGTZ\tR%d, #%d",ins[ins_num].rs,ins[ins_num].offset);
         break;
     case 4: case 9:
-        if(ins[ins_num].raw[0][0]=='0')printf("MUL\tR%d, R%d, R%d\n",ins[ins_num].rd,ins[ins_num].rs,ins[ins_num].rt);
-        else printf("MUL\tR%d, R%d, #%d\n",ins[ins_num].rt,ins[ins_num].rs,ins[ins_num].imm);
+        if(ins[ins_num].raw[0][0]=='0')printf("MUL\tR%d, R%d, R%d",ins[ins_num].rd,ins[ins_num].rs,ins[ins_num].rt);
+        else printf("MUL\tR%d, R%d, #%d",ins[ins_num].rt,ins[ins_num].rs,ins[ins_num].imm);
         break;
     case 5:
-        printf("LW\tR%d, %d(R%d)\n",ins[ins_num].rt,ins[ins_num].offset,ins[ins_num].rs);
+        printf("LW\tR%d, %d(R%d)",ins[ins_num].rt,ins[ins_num].offset,ins[ins_num].rs);
         break;
     case 6:
-        printf("SW\tR%d, %d(R%d)\n",ins[ins_num].rt,ins[ins_num].offset,ins[ins_num].rs);
+        printf("SW\tR%d, %d(R%d)",ins[ins_num].rt,ins[ins_num].offset,ins[ins_num].rs);
         break;
     case 7: case 17:
-        if(ins[ins_num].raw[0][0]=='0')printf("ADD\tR%d, R%d, R%d\n",ins[ins_num].rd,ins[ins_num].rs,ins[ins_num].rt);
-        else printf("ADD\tR%d, R%d, #%d\n",ins[ins_num].rt,ins[ins_num].rs,ins[ins_num].imm);
+        if(ins[ins_num].raw[0][0]=='0')printf("ADD\tR%d, R%d, R%d",ins[ins_num].rd,ins[ins_num].rs,ins[ins_num].rt);
+        else printf("ADD\tR%d, R%d, #%d",ins[ins_num].rt,ins[ins_num].rs,ins[ins_num].imm);
         break;
     case 8: case 18:
-        if(ins[ins_num].raw[0][0]=='0')printf("SUB\tR%d, R%d, R%d\n",ins[ins_num].rd,ins[ins_num].rs,ins[ins_num].rt);
-        else printf("SUB\tR%d, R%d, #%d\n",ins[ins_num].rt,ins[ins_num].rs,ins[ins_num].imm);
+        if(ins[ins_num].raw[0][0]=='0')printf("SUB\tR%d, R%d, R%d",ins[ins_num].rd,ins[ins_num].rs,ins[ins_num].rt);
+        else printf("SUB\tR%d, R%d, #%d",ins[ins_num].rt,ins[ins_num].rs,ins[ins_num].imm);
         break;
     case 10: case 19:
-        if(ins[ins_num].raw[0][0]=='0')printf("AND\tR%d, R%d, R%d\n",ins[ins_num].rd,ins[ins_num].rs,ins[ins_num].rt);
-        else printf("AND\tR%d, R%d, #%d\n",ins[ins_num].rt,ins[ins_num].rs,ins[ins_num].imm);
+        if(ins[ins_num].raw[0][0]=='0')printf("AND\tR%d, R%d, R%d",ins[ins_num].rd,ins[ins_num].rs,ins[ins_num].rt);
+        else printf("AND\tR%d, R%d, #%d",ins[ins_num].rt,ins[ins_num].rs,ins[ins_num].imm);
         break;
     case 11: case 20:
-        if(ins[ins_num].raw[0][0]=='0')printf("NOR\tR%d, R%d, R%d\n",ins[ins_num].rd,ins[ins_num].rs,ins[ins_num].rt);
-        else printf("NOR\tR%d, R%d, #%d\n",ins[ins_num].rt,ins[ins_num].rs,ins[ins_num].imm);
+        if(ins[ins_num].raw[0][0]=='0')printf("NOR\tR%d, R%d, R%d",ins[ins_num].rd,ins[ins_num].rs,ins[ins_num].rt);
+        else printf("NOR\tR%d, R%d, #%d",ins[ins_num].rt,ins[ins_num].rs,ins[ins_num].imm);
         break;
     case 12: case 21:
-        if(ins[ins_num].raw[0][0]=='0')printf("SLT\tR%d, R%d, R%d\n",ins[ins_num].rd,ins[ins_num].rs,ins[ins_num].rt);
-        else printf("SLT\tR%d, R%d, #%d\n",ins[ins_num].rt,ins[ins_num].rs,ins[ins_num].imm);
+        if(ins[ins_num].raw[0][0]=='0')printf("SLT\tR%d, R%d, R%d",ins[ins_num].rd,ins[ins_num].rs,ins[ins_num].rt);
+        else printf("SLT\tR%d, R%d, #%d",ins[ins_num].rt,ins[ins_num].rs,ins[ins_num].imm);
         break;
     case 13:
-        printf("JR\tR%d\n",ins[ins_num].rs);
+        printf("JR\tR%d",ins[ins_num].rs);
         break;
     case 14:
-        printf("BREAK\n");
+        printf("BREAK");
         break;
     case 15:
-        printf("SRL\tR%d, R%d, #%d\n",ins[ins_num].rd,ins[ins_num].rt,ins[ins_num].sa);
+        printf("SRL\tR%d, R%d, #%d",ins[ins_num].rd,ins[ins_num].rt,ins[ins_num].sa);
         break;
     case 16:
-        printf("SRA\tR%d, R%d, #%d\n",ins[ins_num].rd,ins[ins_num].rt,ins[ins_num].sa);  
+        printf("SRA\tR%d, R%d, #%d",ins[ins_num].rd,ins[ins_num].rt,ins[ins_num].sa);  
         break;
     case 22:
-        printf("SLL\tR%d, R%d, #%d\n",ins[ins_num].rd,ins[ins_num].rt,ins[ins_num].sa);
+        printf("SLL\tR%d, R%d, #%d",ins[ins_num].rd,ins[ins_num].rt,ins[ins_num].sa);
         break;
     case 23:
-        printf("NOP\n");
+        printf("NOP");
     }
 }
 
 int circle = 1;
-void simulation_print(int ins_num){
-    printf("--------------------\nCycle:%d\t%d\t",circle,ins_num);
-    ins_print(ins[ins_num].instype,ins_num);
-    printf("\nRegisters\n");
-    int r_num=0;
-    while(r_num<32){
-        printf("R%02d:",r_num);
-        for(int i=0;i<16;i++)printf("\t%d",gps[i+r_num]);
-        printf("\n");
-        r_num+=16;
-    }
-    printf("\nData\n");
-    r_num=isword;
-    while(r_num<data_num){
-        printf("%d:",r_num);
-        for(int i=0;i<8;i++)printf("\t%d",ins[r_num+(i<<2)].imm);
-        printf("\n");
-        r_num+=4*8;
-    }
-    printf("\n");
-}
-void simulation_run(){
-    int oldnow,now = 64;
-    while(1){
-        oldnow = now;
-        func[ins[now].instype](now);
-        simulation_print(oldnow);
-        circle+=1;
-        if(ins[now].instype == 14) break;
-        if(ins[oldnow].instype == 1 ||ins[oldnow].instype== 13)continue;
-        now += 4;
-    }
-}
 struct Queue{
     int queue[MAX_EXE],head,tail;
     int pop(){return queue[head++];}
     void push(int x){queue[tail++]=x;}
-}que[4];
+    bool empty(){return head==tail;}
+}que[4],post[4];
 struct Column{
     int index, inpre, inexe, inwrite;
     int instype;
-    int des, src1, src2, srcd1, srcd2;
+    int des, src[2],srcd[2];
 };
 struct Table{
     Column list[MAX_EXE];
     int tnum;
-    int push(int x){
-        list[tnum].index = x;
+    int push(int index){
+        list[tnum].index = index;
         list[tnum].inpre = circle;
-        list[tnum].instype = ins[x].instype;
-        switch (ins[x].instype){
-        case /* constant-expression */:
-            /* code */
-            break;
-        
-        default:
-            break;
+        list[tnum].instype = ins[index].instype;
+        list[tnum].inexe = list[tnum].inwrite = INF; //预设为无限大
+        switch (ins[index].instype){
+            case 5: case 7: case 8: case 9: case 10: case 11: case 12:{ //lw add~slt 用立即数的
+                list[tnum].des = ins[index].rt;
+                list[tnum].src[0] = ins[index].rs;
+                list[tnum].src[1] = -1; //-1 为没有
+                break;
+            }
+            case 6: case 2:{//sw beq
+                list[tnum].des = -1;
+                list[tnum].src[0] = ins[index].rs;
+                list[tnum].src[1] = ins[index].rt;
+                break;
+            }
+            case 22: case 15: case 16:{//sll srl sra
+                list[tnum].des = ins[index].rd;
+                list[tnum].src[0] = ins[index].rt;
+                list[tnum].src[1] = -1;
+                break;
+            }
+            case 13: case 0: case 3:{// jr bltz bgtz
+                list[tnum].des = -1;
+                list[tnum].src[0] = ins[index].rs;
+                list[tnum].src[1] = -1;
+                break;
+            }
+            case 17: case 18: case 19: case 20: case 21: case 4: {//add~slt 用寄存器的
+                list[tnum].des = ins[index].rd;
+                list[tnum].src[0] = ins[index].rs;
+                list[tnum].src[1] = ins[index].rt;               
+            }
         }
+        return tnum++;
     }
+    void exe(int num){
+        list[num].inexe = circle;
+    }
+    void write(int num){
+        list[num].inwrite = circle;
+    }    
 }table1;
-struct Buffer{
-    int ins_num,ti; //指令，取的时间
-}if_unit[1],pre_issue[4],pre_fun[4][2],post_fun[4];
 
-int pre_issue_num=0,pre_fun_num[4],delay[3]={1,2,1};
+int pre_issue[4]; //pre_issue buffer
+int pre_issue_num=0,delay[4]={1,1,2,1};
+string funprin[4]={"ALU","ALUB","MEM"};
 int write_io = 0;
+
 bool Fetch(){
+    if(que[0].head<que[0].tail)return false;
     for(int cou=0;pre_issue_num<4,cou<2;cou++,pc+=4){
         switch (ins[pc].instype){
-        case 14:
-            return true; //遇到break停止执行
-            break;
-        case 23:
-            continue;//nop 不用做任何事
-        case 1: case 13: case 2: case 0: case 3: //J JR BEQ BLTZ BGTZ
-            if_unit[0].ins_num = pc;
-            if_unit[0].ti = circle;
-            pc+=4
-            break;
-        default: //其他指令
-            pre_issue[pre_issue_num].ins_num = pc;
-            pre_issue[pre_issue_num].ti = circle;
+            case 14:
+                return true; //遇到break停止执行
+            case 23:
+                continue;//nop 不用做任何事  
+            case 1: case 13: case 2: case 0: case 3: {//J JR BEQ BLTZ BGTZ
+                int nowtnum = table1.push(pc); //注意检查 b开头的那些对不对！！
+                que[0].push(nowtnum);
+                pc+=4;
+                break;
+            }
+            default:{ //其他指令
+                int nowtnum = table1.push(pc);
+                pre_issue[pre_issue_num++] = nowtnum;
+            }
         }
     }
     return false;
 }
+void Execute(){
+    for(int i=1;i<4;i++){ 
+        int now = que[i].head;//执行
+        if(!que[i].empty() && circle-table1.list[now].inexe>=delay[i]){
+            table1.list[now].inwrite=circle;
+            post[i].push(que[i].pop()); //不为空且满足了执行时间
+        }
+        now = post[i].head;//写
+        if(!post[i].empty() && circle-table1.list[now].inwrite>=1){
+            func[table1.list[now].instype](table1.list[now].index);
+            if(table1.list[now].des>0)wgps[table1.list[now].des]=-1; //该寄存器不再处于写等待
+            post[i].pop();
+        }
+    }    
+}
 void Issue_success(int pos){
-    int ins_num = pre_issue[pos].ins_num;
-    int ins_type = ins[ins_num].instype;
-    int ins_func = belong_func[ins_type];
+    int insnum = pre_issue[pos];
+    int ins_func = belong_func[table1.list[insnum].instype];
     //放到对应功能区
-    pre_fun[ins_func][pre_fun_num[ins_func]].ins_num = pre_issue[pos].ins_num;
-    pre_fun[ins_func][pre_fun_num[ins_func]].ti = circle;
-    pre_fun_num[ins_func]++;
+    que[ins_func].push(insnum);
+    //该寄存器要被写
+    if(table1.list[insnum].des>0)wgps[table1.list[insnum].des]=insnum;
     //把issue的指令删掉
-    for(int i=pos;i<pre_issue_num-1;i++){ 
-        pre_issue[i].ins_num = pre_issue[i+1].num;
-        pre_issue[i].ti = pre_issue[i+1].ti;
-    }
+    for(int i=pos;i<pre_issue_num-1;i++)pre_issue[i] = pre_issue[i+1];
     pre_issue_num--;
+    for(int i=pre_issue_num;i<4;i++)pre_issue[i] = -1;
 }
 /*
 不能issue的情况
 1. 功能没空
 2. 写目标是之前的写
 */
-bool Issue(){
-    //done 已经发射的指令
-    for(int i=0,done=0;i<pre_issue_num,done<2;i++){
-        int now = pre_issue[i].ins_num;
-        int ins_num = pre_issue[pos].ins_num;
-        int ins_type = ins[ins_num].instype;
-        int ins_func = belong_func[ins_type];
-        if(pre_fun_num[ins_func]>=2 )continue;//功能有空
-        switch (ins[now].instype){
-        case 6://SW
+bool Issue_check(int i){
+    //满足发射要求返回true
+    int now = pre_issue[i];
+    int instype = table1.list[now].instype;
+    int insfunc = belong_func[instype];
+    if(que[insfunc].tail-que[insfunc].head>=2)return false;//功能单元没空
+    for(int j=0;j<i;j++){
+        for(int k=0;k<2;k++){
+            if(table1.list[pre_issue[j]].src[k]==table1.list[now].des)return false;//WAR冲突
+        }
+        if(table1.list[pre_issue[j]].des == table1.list[now].des)return false; //WAW 冲突
+    }
+    if(wgps[table1.list[now].des]>=0)return false; //有功能单元要写 WAW
+    for(int j=0;j<2;j++){ //检查src有没有准备好
+        if(table1.list[now].src[j]>=0){
+            if(wgps[table1.list[now].src[j]]>=0)return false; //有功能单元要写
+            for(int k=0;k<i;k++){ //有还没发射的语句要写
+                if(table1.list[pre_issue[k]].des == table1.list[now].src[j])return false;
+            }
+        }
+    }
+    if(instype == 6){//sw
+        for(int j=0;j<i;j++){if(table1.list[pre_issue[j]].instype == 6)return false;}
+    }
+    if(instype == 5){//lw 
+        for(int j=0;j<i;j++){if(table1.list[pre_issue[j]].instype == 6)return false;}//lw指令前有sw没有issue
+    }
+    return true;//满足
+        //不确定这里要不要检查写端口占用
+        // if(ok && !wgps[ins[ins_num].rt] && !wgps[ins[index].rs]){//资源准备好了, 没出现waw
+}
+void init(){
+    for(int i=0;i<REG_SIZE;i++)wgps[i]=-1;
+    for(int i=0;i<4;i++)pre_issue[i]=-1;
+}
+void Branch(){
+    if(!que[0].empty()){
+        int now = que[0].head;//执行pc跳转
+        if(circle-table1.list[now].inexe>=1){
+            func[table1.list[now].instype](table1.list[now].index);
+            que[0].pop();
+        }
+        else{
             bool ok = true;
-            for(int j=0;j<i;j++){
-                int check_now = pre_issue[j].ins_num;
-                if(pre_issue[check_now].ins_num == 6){
-                    ok = false;//sw指令前有sw没有issue
-                    break;
+            for(int j=0;j<2;j++){
+                if(table1.list[now].src[j]>=0){
+                    if(wgps[table1.list[now].src[j]]>=0)ok=false; //有功能单元要写
+                    for(int i=0;i<pre_issue_num;i++){ //有还没发射的语句要写
+                        if(table1.list[pre_issue[i]].des == table1.list[now].src[j])ok = false;
+                    }
                 }
             }
-            if(write_io==0 && ok && !wgps[ins[ins_num].rt]){ //写端口没有被占用, 资源都准备好了
-                Issue_success(i);
-                done++;
-                i--;
-            }
-            break;
-        case 5://LW
-            bool ok = true;
-            for(int j=0;j<i;j++){
-                int check_now = pre_issue[j].ins_num;
-                if(pre_issue[check_now].ins_num == 6){
-                    ok = false;//lw指令前有sw没有issue
-                    break;
-                }
-            }
-            //不确定这里要不要检查写端口占用
-            if(ok && !wgps[ins[ins_num].rt] && !wgps[ins[index].rs]){//资源准备好了, 没出现waw
-                Issue_success(i);
-                done++;
-                i--;
-            }
-            break;
-        
-        default:
-            break;
+            if(ok){table1.list[now].inexe = circle;} //准备执行
         }
     }
 }
-void pipeline_run(){
-    int pc = 64;
-    while(1){
-        if(Fetch())break;
-        if()
-        for(int i=0;i<4;i++){
-            if
-        }
-        oldnow = now;
-        func[ins[now].instype](now);
-        simulation_print(oldnow);
-        circle+=1;
-        if(ins[now].instype == 14) break;
-        if(ins[oldnow].instype == 1 ||ins[oldnow].instype== 13)continue;
-        now += 4;
-    }
-}
-void pipeline_print(int ins_num){
+
+void pipeline_print(){
     printf("--------------------\nCycle:%d\n\n",circle);
     printf("IF Unit:\n");
-    printf("\t>Waiting Instruction:\n"); //!!没处理
-    printf("\t>Executed Instruction:\n"); //!!没处理
+    printf("\t>Waiting Instruction:");
+    if(!que[0].empty()){
+        int now = que[0].queue[que[0].head];
+        if(table1.list[now].inexe==INF)ins_print(table1.list[now].index);
+        printf("\n");
+    }
+    printf("\t>Executed Instruction:");
+    if(!que[0].empty()){
+        int now = que[0].queue[que[0].head];
+        if(table1.list[now].inexe!=INF)ins_print(table1.list[now].index);
+        printf("\n");
+    }
     printf("Pre-Issue Buffer:\n");
     for(int i=0;i<4;i++){
         printf("Entry %d:",i);
-        if(pre_issue[i].ins_num>=0){
-            printf("[")
-            ins_print(pre_issue[i].ins_num);
+        if(pre_issue[i]>0){
+            printf("[");
+            ins_print(table1.list[pre_issue[i]].index);
             printf("]");
         }
         printf("\n");
     }
-    printf("Pre-ALU Queue\n");
-    for(int i=0;i<2;i++){
-        printf("Entry %d:",i);
-        if(pre_alu[i].ins_num>=0){
-            printf("[")
-            ins_print(pre_alu[i].ins_num);
+    for(int i=1;i<4;i++){
+        cout<<"Pre-"<<funprin[i-1]<<" Queue:"<<endl;
+        for(int i=0;i<2;i++){
+            printf("Entry %d:",i);
+            if(que[i].head+i<que[i].tail){
+                printf("[");
+                ins_print(table1.list[que[i].queue[que[i].head+i]].index);
+                printf("]");
+            }
+            printf("\n");
+        }
+        cout<<"Post-"<<funprin[i-1]<<" Buffer:";
+        if(!post[i].empty()){
+            printf("[");
+            ins_print(table1.list[post[i].queue[post[i].head]].index);
             printf("]");
         }
         printf("\n");
     }
-    printf("Post-ALU Buffer:");
-    if(post_alu[i].ins_num>=0){
-        printf("[")
-        ins_print(post_alu[i].ins_num);
-        printf("]");
-    }
-    printf("\n");
-    printf("Pre-ALUB Queue\n");
-    for(int i=0;i<2;i++){
-        printf("Entry %d:",i);
-        if(pre_aluB[i].ins_num>=0){
-            printf("[")
-            ins_print(pre_aluB[i].ins_num);
-            printf("]");
-        }
-        printf("\n");
-    }
-    printf("Post-ALUB Buffer:");
-    if(post_aluB[i].ins_num>=0){
-        printf("[")
-        ins_print(post_aluB[i].ins_num);
-        printf("]");
-    }
-    printf("\n");
-    
-
     printf("\nRegisters\n");
     int r_num=0;
     while(r_num<32){
         printf("R%02d:",r_num);
-        for(int i=0;i<16;i++)printf("\t%d",gps[i+r_num]);
+        for(int i=0;i<8;i++)printf("\t%d",gps[i+r_num]);
         printf("\n");
-        r_num+=16;
+        r_num+=8;
     }
     printf("\nData\n");
     r_num=isword;
@@ -487,11 +491,31 @@ void pipeline_print(int ins_num){
         printf("\n");
         r_num+=4*8;
     }
-    printf("\n");
 }
-
-
-
+void pipeline_run(){
+    pc = 64;
+    circle = 1;
+    init();
+    while(1){
+        if(Fetch())break;
+        for(int i=0,cou=0;i<pre_issue_num,cou<2;){
+            if(Issue_check(i)){//检查是否满足发射条件
+                cou++; 
+                Issue_success(i);//发射成功
+            }
+            else i++;
+        }
+        Branch();
+        Execute();
+        pipeline_print();
+        if(usejump>0){//是否jump
+            pc = usejump;
+            usejump = 0;
+        }
+        else pc+=4;
+        circle+=1;
+    }
+}
 void disassembler_print(){
     for(int i=64;i<isword;i+=4){
         for(int j=0;j<6;j++){
@@ -499,12 +523,14 @@ void disassembler_print(){
             if(j!=5)cout<<' ';
         }
         printf("\t%d\t",i);
-        ins_print(ins[i].instype,i);
+        ins_print(i);
+        printf("\n");
     }
     for(int i=isword;i<data_num;i+=4){
         cout<<ins[i].whole<<'\t'<<i<<'\t'<<ins[i].imm<<endl;
     }
 }
+
 int main(int argc, char** argv){
     if(argc == 1){
         printf("reading from input file\n");
@@ -555,7 +581,7 @@ int main(int argc, char** argv){
     disassembler_print();
     fclose(stdout);
     freopen("simulation.txt","w",stdout);
-    simulation_run();
+    pipeline_run();
     fclose(stdout);
     fclose(stdin);
     return 0;
