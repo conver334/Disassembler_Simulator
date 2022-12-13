@@ -58,19 +58,19 @@ void subOvf(int& result, int a, int b) {//有符号加法溢出
     if(a > 0 && b < 0 && result < 0)throw "Integer Overflow";     
     if(a < 0 && b > 0 && result > 0)throw "Integer Overflow";     
 }
-void fun_BEQ(int& index){//2
-    if(gps[ins[index].rt] == gps[ins[index].rs])index+=ins[index].offset;
+void fun_BEQ(int index){//2
+    if(gps[ins[index].rt] == gps[ins[index].rs])pc+=ins[index].offset;
 }
 
-void fun_BLTZ(int& index){//0
-    if(gps[ins[index].rs]<0) index+=ins[index].offset;
+void fun_BLTZ(int index){//0
+    if(gps[ins[index].rs]<0) pc+=ins[index].offset;
 }
 
-void fun_BGTZ(int& index){//3
-    if(gps[ins[index].rs]>0) index+=ins[index].offset;
+void fun_BGTZ(int index){//3
+    if(gps[ins[index].rs]>0) pc+=ins[index].offset;
 }
 
-void fun_LW(int& index){//5
+void fun_LW(int index){//5
     try{
         int vaddr = ins[index].offset+gps[ins[index].rs];
         if(vaddr%4!=0)throw "TLB Refill TLB Invalid, Bus Error, Address Error, Watch";
@@ -79,7 +79,7 @@ void fun_LW(int& index){//5
         cout<<str<<endl;
     }
 }
-void fun_SW(int& index){//6
+void fun_SW(int index){//6
     try{
         int vaddr = ins[index].offset+gps[ins[index].rs];
         if(vaddr%4!=0)throw "TLB Refill TLB Invalid, Bus Error, Address Error, Watch";
@@ -89,33 +89,33 @@ void fun_SW(int& index){//6
     }
 }
 
-void fun_SLL(int& index){//22
+void fun_SLL(int index){//22
     gps[ins[index].rd] = gps[ins[index].rt]<<ins[index].sa;
 }
-void fun_SRL(int& index){//15 逻辑右移
+void fun_SRL(int index){//15 逻辑右移
     gps[ins[index].rd] = ((unsigned)gps[ins[index].rt])>>ins[index].sa;
 }
-void fun_SRA(int& index){//16 算数右移
+void fun_SRA(int index){//16 算数右移
     gps[ins[index].rd] = gps[ins[index].rt]>>ins[index].sa;
 }
 
-void fun_J(int& index){//0
+void fun_J(int index){//0
     index = ins[index].imm;
     usejump = 1;
 }
 
-void fun_JR(int& index){//13
+void fun_JR(int index){//13
     index = gps[ins[index].rs];
     usejump = 1;
 }
-void fun_BREAK(int& index){//14
+void fun_BREAK(int index){//14
 }
 
-void fun_MUL(int& index){//4 9
+void fun_MUL(int index){//4 9
     if(ins[index].raw[0][0]=='0')gps[ins[index].rd]=gps[ins[index].rs]*gps[ins[index].rt];  
     else gps[ins[index].rt]=gps[ins[index].rs]*ins[index].imm; 
 }
-void fun_ADD(int& index){//7 17
+void fun_ADD(int index){//7 17
     try{
         if(ins[index].raw[0][0]=='0')addOvf(gps[ins[index].rd],gps[ins[index].rs],gps[ins[index].rt]);  
         else addOvf(gps[ins[index].rt],gps[ins[index].rs],ins[index].imm); 
@@ -124,7 +124,7 @@ void fun_ADD(int& index){//7 17
         cout<<str<<endl;
     }
 }
-void fun_SUB(int& index){//8 18
+void fun_SUB(int index){//8 18
     try{
         if(ins[index].raw[0][0]=='0')subOvf(gps[ins[index].rd],gps[ins[index].rs],gps[ins[index].rt]);  
         else subOvf(gps[ins[index].rt],gps[ins[index].rs],ins[index].imm); 
@@ -133,22 +133,22 @@ void fun_SUB(int& index){//8 18
         cout<<str<<endl;
     }
 }
-void fun_AND(int& index){//10 19
+void fun_AND(int index){//10 19
     if(ins[index].raw[0][0]=='0') gps[ins[index].rd] = gps[ins[index].rs] & gps[ins[index].rt];  
     else gps[ins[index].rt] = gps[ins[index].rs] & ins[index].imm;
 }
-void fun_NOR(int& index){//11 20 
+void fun_NOR(int index){//11 20 
     if(ins[index].raw[0][0]=='0') gps[ins[index].rd] = ~(gps[ins[index].rs] | gps[ins[index].rt]);  
     else gps[ins[index].rt] = ~(gps[ins[index].rs] | ins[index].imm);
 }
-void fun_SLT(int& index){//12 21
+void fun_SLT(int index){//12 21
     if(ins[index].raw[0][0]=='0') gps[ins[index].rd] = gps[ins[index].rs]<gps[ins[index].rt]?1:0; 
     else gps[ins[index].rt] = gps[ins[index].rs]<ins[index].imm?1:0;
 }
-void fun_NOP(int& index){//23
+void fun_NOP(int index){//23
 }
 // 7 6 4 5 2
-void (*func[])(int &) = {
+void (*func[])(int) = {
     fun_BLTZ,fun_J,fun_BEQ,fun_BGTZ,fun_MUL,fun_LW,fun_SW, 
     fun_ADD,fun_SUB,fun_MUL,fun_AND,fun_NOR,fun_SLT,
     fun_JR,fun_BREAK,fun_SRL,fun_SRA,
@@ -321,8 +321,8 @@ string funprin[4]={"ALU","ALUB","MEM"};
 int write_io = 0;
 
 bool Fetch(){
-    if(que[0].head<que[0].tail)return false;
-    for(int cou=0;pre_issue_num<4,cou<2;cou++,pc+=4){
+    if(!que[0].empty())return false; 
+    for(int cou=0;pre_issue_num<4&&cou<2;cou++,pc+=4){
         switch (ins[pc].instype){
             case 14:
                 return true; //遇到break停止执行
@@ -332,7 +332,7 @@ bool Fetch(){
                 int nowtnum = table1.push(pc); //注意检查 b开头的那些对不对！！
                 que[0].push(nowtnum);
                 pc+=4;
-                break;
+                return false;
             }
             default:{ //其他指令
                 int nowtnum = table1.push(pc);
@@ -344,12 +344,14 @@ bool Fetch(){
 }
 void Execute(){
     for(int i=1;i<4;i++){ 
-        int now = que[i].head;//执行
-        if(!que[i].empty() && circle-table1.list[now].inexe>=delay[i]){
-            table1.list[now].inwrite=circle;
-            post[i].push(que[i].pop()); //不为空且满足了执行时间
+        int now = que[i].queue[que[i].head];//执行
+        if(!que[i].empty() && circle-table1.list[now].inexe>=delay[i]){//不为空且满足了执行时间
+            table1.write(now);
+            int havepop = que[i].pop();
+            if(table1.list[now].des>=0)post[i].push(havepop); //压入写等待
+            else func[table1.list[now].instype](table1.list[now].index); //直接执行
         }
-        now = post[i].head;//写
+        now = post[i].queue[post[i].head];//写
         if(!post[i].empty() && circle-table1.list[now].inwrite>=1){
             func[table1.list[now].instype](table1.list[now].index);
             if(table1.list[now].des>0)wgps[table1.list[now].des]=-1; //该寄存器不再处于写等待
@@ -362,6 +364,8 @@ void Issue_success(int pos){
     int ins_func = belong_func[table1.list[insnum].instype];
     //放到对应功能区
     que[ins_func].push(insnum);
+    //该指令状态为将要执行
+    table1.exe(insnum);
     //该寄存器要被写
     if(table1.list[insnum].des>0)wgps[table1.list[insnum].des]=insnum;
     //把issue的指令删掉
@@ -379,6 +383,7 @@ bool Issue_check(int i){
     int now = pre_issue[i];
     int instype = table1.list[now].instype;
     int insfunc = belong_func[instype];
+    if(table1.list[now].inpre == circle)return false;//不能是刚刚取的
     if(que[insfunc].tail-que[insfunc].head>=2)return false;//功能单元没空
     for(int j=0;j<i;j++){
         for(int k=0;k<2;k++){
@@ -386,7 +391,7 @@ bool Issue_check(int i){
         }
         if(table1.list[pre_issue[j]].des == table1.list[now].des)return false; //WAW 冲突
     }
-    if(wgps[table1.list[now].des]>=0)return false; //有功能单元要写 WAW
+    if(table1.list[now].des>=0&&wgps[table1.list[now].des]>=0)return false; //有功能单元要写 WAW
     for(int j=0;j<2;j++){ //检查src有没有准备好
         if(table1.list[now].src[j]>=0){
             if(wgps[table1.list[now].src[j]]>=0)return false; //有功能单元要写
@@ -409,47 +414,51 @@ void init(){
     for(int i=0;i<REG_SIZE;i++)wgps[i]=-1;
     for(int i=0;i<4;i++)pre_issue[i]=-1;
 }
-void Branch(){
+void Branch_exe(){
     if(!que[0].empty()){
-        int now = que[0].head;//执行pc跳转
+        int now = que[0].queue[que[0].head];//执行pc跳转
         if(circle-table1.list[now].inexe>=1){
             func[table1.list[now].instype](table1.list[now].index);
             que[0].pop();
         }
-        else{
-            bool ok = true;
-            for(int j=0;j<2;j++){
-                if(table1.list[now].src[j]>=0){
-                    if(wgps[table1.list[now].src[j]]>=0)ok=false; //有功能单元要写
-                    for(int i=0;i<pre_issue_num;i++){ //有还没发射的语句要写
-                        if(table1.list[pre_issue[i]].des == table1.list[now].src[j])ok = false;
-                    }
+    }
+}
+void Branch(){
+    if(!que[0].empty()){
+        int now = que[0].queue[que[0].head];//执行pc跳转
+        if(table1.list[now].inpre == circle)return;
+        bool ok = true;
+        for(int j=0;j<2;j++){
+            if(table1.list[now].src[j]>=0){
+                if(wgps[table1.list[now].src[j]]>=0)ok=false; //有功能单元要写
+                for(int i=0;i<pre_issue_num;i++){ //有还没发射的语句要写
+                    if(table1.list[pre_issue[i]].des == table1.list[now].src[j])ok = false;
                 }
             }
-            if(ok){table1.list[now].inexe = circle;} //准备执行
         }
+        if(ok){table1.list[now].inexe = circle;} //准备执行
     }
 }
 
 void pipeline_print(){
     printf("--------------------\nCycle:%d\n\n",circle);
     printf("IF Unit:\n");
-    printf("\t>Waiting Instruction:");
+    printf("\tWaiting Instruction:");
     if(!que[0].empty()){
         int now = que[0].queue[que[0].head];
         if(table1.list[now].inexe==INF)ins_print(table1.list[now].index);
-        printf("\n");
     }
-    printf("\t>Executed Instruction:");
+    printf("\n");
+    printf("\tExecuted Instruction:");
     if(!que[0].empty()){
         int now = que[0].queue[que[0].head];
         if(table1.list[now].inexe!=INF)ins_print(table1.list[now].index);
-        printf("\n");
     }
+    printf("\n");
     printf("Pre-Issue Buffer:\n");
     for(int i=0;i<4;i++){
-        printf("Entry %d:",i);
-        if(pre_issue[i]>0){
+        printf("\tEntry %d:",i);
+        if(pre_issue[i]>=0){
             printf("[");
             ins_print(table1.list[pre_issue[i]].index);
             printf("]");
@@ -458,11 +467,11 @@ void pipeline_print(){
     }
     for(int i=1;i<4;i++){
         cout<<"Pre-"<<funprin[i-1]<<" Queue:"<<endl;
-        for(int i=0;i<2;i++){
-            printf("Entry %d:",i);
-            if(que[i].head+i<que[i].tail){
+        for(int j=0;j<2;j++){
+            printf("\tEntry %d:",j);
+            if(que[i].head+j<que[i].tail){
                 printf("[");
-                ins_print(table1.list[que[i].queue[que[i].head+i]].index);
+                ins_print(table1.list[que[i].queue[que[i].head+j]].index);
                 printf("]");
             }
             printf("\n");
@@ -497,8 +506,9 @@ void pipeline_run(){
     circle = 1;
     init();
     while(1){
+        Branch_exe();
         if(Fetch())break;
-        for(int i=0,cou=0;i<pre_issue_num,cou<2;){
+        for(int i=0,cou=0;i<pre_issue_num&&cou<2;){
             if(Issue_check(i)){//检查是否满足发射条件
                 cou++; 
                 Issue_success(i);//发射成功
@@ -512,7 +522,6 @@ void pipeline_run(){
             pc = usejump;
             usejump = 0;
         }
-        else pc+=4;
         circle+=1;
     }
 }
@@ -535,7 +544,7 @@ int main(int argc, char** argv){
     if(argc == 1){
         printf("reading from input file\n");
     }
-    freopen("disassembly.txt","w",stdout);
+    // freopen("disassembly.txt","w",stdout);
     freopen(argv[1],"r",stdin);
     
     string buf;
@@ -579,10 +588,10 @@ int main(int argc, char** argv){
     }
     data_num=ins_num;
     disassembler_print();
-    fclose(stdout);
-    freopen("simulation.txt","w",stdout);
+    // fclose(stdout);
+    // freopen("simulation.txt","w",stdout);
     pipeline_run();
-    fclose(stdout);
+    // fclose(stdout);
     fclose(stdin);
     return 0;
 }
