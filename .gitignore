@@ -4,4 +4,5 @@ main
 diff*
 .vscode
 # sample*.txt
-MIPSsim
+MIPSsim*
+test*

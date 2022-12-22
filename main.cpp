@@ -3,6 +3,12 @@
 g++ main.cpp -o MIPSsim
 运行命令：
 MIPSsim inputfilename outputfilenam
+- Inputfilename – text格式的输入文件名(例如, sample.txt). 
+- Outputfilename – 输出文件名 (例如, output.txt)
+- ./MIPSsim sample.txt simulation.txt
+简单的测试：
+sh test.sh
+- test.sh 中编写了编译，运行，对比命令
 */
 #include<iostream>
 #include<cstdio>
