@@ -277,30 +277,10 @@ void simulation_run(){
         now += 4;
     }
 }
-void disassembler_print(){
-    for(int i=64;i<isword;i+=4){
-        for(int j=0;j<6;j++){
-            cout<<ins[i].raw[j];
-            if(j!=5)cout<<' ';
-        }
-        printf("\t%d\t",i);
-        ins_print(ins[i].instype,i);
-    }
-    for(int i=isword;i<data_num;i+=4){
-        cout<<ins[i].whole<<'\t'<<i<<'\t'<<ins[i].imm<<endl;
-    }
-}
-int main(int argc, char** argv){
-    if(argc == 1){
-        printf("reading from input file\n");
-    }
-    freopen("disassembly.txt","w",stdout);
-    freopen(argv[1],"r",stdin);
-    
+void parse(){
     string buf;
     int ins_len[6] = {6,5,5,5,5,6};
     int ins_num = 64; //当前扫描到的指令
-
     while(cin>>buf){
         ins[ins_num].whole = buf;
         if(isword)ins[ins_num].imm = SignedBinaryToDecimal(buf);
@@ -335,10 +315,32 @@ int main(int argc, char** argv){
             }
         }
         ins_num+=4;
+    }    
+    data_num=ins_num; 
+}
+void disassembler_print(){
+    for(int i=64;i<isword;i+=4){
+        for(int j=0;j<6;j++){
+            cout<<ins[i].raw[j];
+            if(j!=5)cout<<' ';
+        }
+        printf("\t%d\t",i);
+        ins_print(ins[i].instype,i);
     }
-    data_num=ins_num;
+    for(int i=isword;i<data_num;i+=4){
+        cout<<ins[i].whole<<'\t'<<i<<'\t'<<ins[i].imm<<endl;
+    }
+}
+int main(int argc, char** argv){
+    if(argc == 1){
+        printf("reading from input file\n");
+    }
+    freopen("disassembly.txt","w",stdout);
+    freopen(argv[1],"r",stdin);
+    parse();
     disassembler_print();
     fclose(stdout);
+    
     freopen("simulation.txt","w",stdout);
     simulation_run();
     fclose(stdout);
