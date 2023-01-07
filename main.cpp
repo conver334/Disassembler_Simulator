@@ -23,7 +23,6 @@ int data_num = 0,data_begin; //data数量,data开始的位置
 struct INSTRCUTION{ //指令
     int instype;
     int rs,rt,rd,imm,offset,sa;
-    int des, src1, src2;
     string raw[6],whole;
 }ins[INS_SIZE];
 int wgps[REG_SIZE]; //功能单元中有没有人写他
@@ -184,7 +183,7 @@ string SPECIAL0[10]={
     "000010", //SRL
     "000011", //SRA
 
-    "100000", //AND
+    "100000", //ADD
     "100010", //SUB
     "100100", //AND
     "100111", //NOR
@@ -268,7 +267,7 @@ struct Queue{
 struct Column{
     int index, inpre, inexe, inwrite;
     int instype;
-    int des, src[2],srcd[2];
+    int des, src[2];
 };
 struct Table{
     Column list[MAX_EXE];
@@ -326,7 +325,6 @@ struct Table{
 int pre_issue[4]; //pre_issue buffer
 int pre_issue_num=0,delay[4]={1,1,2,1};
 string funprin[4]={"ALU","ALUB","MEM"};
-int write_io = 0;
 
 bool Fetch(){
     if(!que[0].empty())return false; 
@@ -545,15 +543,7 @@ void disassembler_print(){
         cout<<ins[i].whole<<'\t'<<i<<'\t'<<ins[i].imm<<endl;
     }
 }
-
-int main(int argc, char** argv){
-    if(argc != 3){
-        printf("Use: MIPSsim inputfilename outputfilename\n");
-        return 0;
-    }
-    freopen(argv[2],"w",stdout);
-    freopen(argv[1],"r",stdin);
-    
+void parse(){
     string buf;
     int ins_len[6] = {6,5,5,5,5,6};
     int ins_num = 64; //当前扫描到的指令
@@ -594,6 +584,15 @@ int main(int argc, char** argv){
         ins_num+=4;
     }
     data_num=ins_num;
+}
+int main(int argc, char** argv){
+    if(argc != 3){
+        printf("Use: MIPSsim inputfilename outputfilename\n");
+        return 0;
+    }
+    freopen(argv[2],"w",stdout);
+    freopen(argv[1],"r",stdin);
+    parse();
     pipeline_run();
     fclose(stdout);
     fclose(stdin);
