@@ -265,7 +265,7 @@ struct Queue{
     bool empty(){return head==tail;}
 }que[4],post[4];
 struct Column{
-    int index, inpre, inexe, inwrite;
+    int index, inpre, inexe, inwrite, haveexe;
     int instype;
     int des, src[2];
 };
@@ -274,6 +274,7 @@ struct Table{
     int tnum;
     int push(int index){
         list[tnum].index = index;
+        list[tnum].haveexe = 0;
         list[tnum].inpre = circle;
         list[tnum].instype = ins[index].instype;
         list[tnum].inexe = list[tnum].inwrite = INF; //预设为无限大
@@ -351,11 +352,14 @@ bool Fetch(){
 void Execute(){
     for(int i=1;i<4;i++){ 
         int now = que[i].queue[que[i].head];//执行
-        if(!que[i].empty() && circle-table1.list[now].inexe>=delay[i]){//不为空且满足了执行时间
-            table1.write(now);
-            int havepop = que[i].pop();
-            if(table1.list[now].des>=0)post[i].push(havepop); //压入写等待
-            else func[table1.list[now].instype](table1.list[now].index); //直接执行
+        if(!que[i].empty()){//执行队列不为空
+            if(circle!=table1.list[now].inexe)table1.list[now].haveexe++;//不是这个时钟周期才取的指令
+            if(table1.list[now].haveexe>=delay[i]){//满足了执行时间
+                table1.write(now);
+                int havepop = que[i].pop();
+                if(table1.list[now].des>=0)post[i].push(havepop); //压入写等待
+                else func[table1.list[now].instype](table1.list[now].index); //直接执行
+            }
         }
         now = post[i].queue[post[i].head];//写
         if(!post[i].empty() && circle-table1.list[now].inwrite>=1){
