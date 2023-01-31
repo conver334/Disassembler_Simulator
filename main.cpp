@@ -17,6 +17,7 @@ sh test.sh
 #include<string>
 #include<cstdlib>
 #include<fstream>
+#include <exception>
 using namespace std;
 const int MAX_EXE = 10000;
 const int INS_SIZE=10000;
@@ -586,9 +587,14 @@ void parse(){
                     if(ins[ins_num].raw[5].compare(SPECIAL0[i])==0){
                         if(i==1)isword = ins_num+4;
                         ins[ins_num].instype = 13+i;
+                        gettar = true;
                         break;
                     }
                 }
+            }
+            if(!gettar){
+                throw logic_error("无效指令");
+                return 0;
             }
         }
         ins_num+=4;
@@ -600,9 +606,12 @@ int main(int argc, char** argv){
         printf("Use: MIPSsim inputfilename outputfilename\n");
         return 0;
     }
-    freopen(argv[2],"w",stdout);
     freopen(argv[1],"r",stdin);
+    freopen("disassembly.txt","w",stdout);
     parse();
+    disassembler_print();
+    fclose(stdout);
+    freopen(argv[2],"w",stdout);
     pipeline_run();
     fclose(stdout);
     fclose(stdin);
