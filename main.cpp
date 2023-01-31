@@ -542,7 +542,9 @@ void pipeline_run(){
 }
 void disassembler_print(){
     for(int i=64;i<isword;i+=4){
-        for(int j=0;j<6;j++){
+        cout<<ins[i].raw[0][0]<<' ';
+        cout<<ins[i].raw[0].substr(1)<<' ';
+        for(int j=1;j<6;j++){
             cout<<ins[i].raw[j];
             if(j!=5)cout<<' ';
         }
@@ -594,7 +596,7 @@ void parse(){
             }
             if(!gettar){
                 throw logic_error("无效指令");
-                return 0;
+                return;
             }
         }
         ins_num+=4;
@@ -608,7 +610,12 @@ int main(int argc, char** argv){
     }
     freopen(argv[1],"r",stdin);
     freopen("disassembly.txt","w",stdout);
-    parse();
+    try{
+        parse();
+    }
+    catch (const exception& e) {
+        cerr << e.what() << endl;
+    }
     disassembler_print();
     fclose(stdout);
     freopen(argv[2],"w",stdout);
