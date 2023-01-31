@@ -29,7 +29,6 @@ int data_num = 0,data_begin; //data数量,data开始的位置
 struct INSTRCUTION{ //指令
     int instype;
     int rs,rt,rd,imm,offset,sa;
-    int des, src1, src2;
     string raw[6],whole;
 }ins[INS_SIZE];
 int wgps[REG_SIZE]; //功能单元中有没有人写他
@@ -190,7 +189,7 @@ string SPECIAL0[10]={
     "000010", //SRL
     "000011", //SRA
 
-    "100000", //AND
+    "100000", //ADD
     "100010", //SUB
     "100100", //AND
     "100111", //NOR
@@ -272,15 +271,16 @@ struct Queue{
     bool empty(){return head==tail;}
 }que[4],post[4];
 struct Column{
-    int index, inpre, inexe, inwrite;
+    int index, inpre, inexe, inwrite, haveexe;
     int instype;
-    int des, src[2],srcd[2];
+    int des, src[2];
 };
 struct Table{
     Column list[MAX_EXE];
     int tnum;
     int push(int index){
         list[tnum].index = index;
+        list[tnum].haveexe = 0;
         list[tnum].inpre = circle;
         list[tnum].instype = ins[index].instype;
         list[tnum].inexe = list[tnum].inwrite = INF; //预设为无限大
@@ -332,7 +332,6 @@ struct Table{
 int pre_issue[4]; //pre_issue buffer
 int pre_issue_num=0,delay[4]={1,1,2,1};
 string funprin[4]={"ALU","ALUB","MEM"};
-int write_io = 0;
 
 bool Fetch(){
     if(!que[0].empty())return false; 
@@ -359,11 +358,14 @@ bool Fetch(){
 void Execute(){
     for(int i=1;i<4;i++){ 
         int now = que[i].queue[que[i].head];//执行
-        if(!que[i].empty() && circle-table1.list[now].inexe>=delay[i]){//不为空且满足了执行时间
-            table1.write(now);
-            int havepop = que[i].pop();
-            if(table1.list[now].des>=0)post[i].push(havepop); //压入写等待
-            else func[table1.list[now].instype](table1.list[now].index); //直接执行
+        if(!que[i].empty()){//执行队列不为空
+            if(circle!=table1.list[now].inexe)table1.list[now].haveexe++;//不是这个时钟周期才取的指令
+            if(table1.list[now].haveexe>=delay[i]){//满足了执行时间
+                table1.write(now);
+                int havepop = que[i].pop();
+                if(table1.list[now].des>=0)post[i].push(havepop); //压入写等待
+                else func[table1.list[now].instype](table1.list[now].index); //直接执行
+            }
         }
         now = post[i].queue[post[i].head];//写
         if(!post[i].empty() && circle-table1.list[now].inwrite>=1){
@@ -551,15 +553,7 @@ void disassembler_print(){
         cout<<ins[i].whole<<'\t'<<i<<'\t'<<ins[i].imm<<endl;
     }
 }
-
-int main(int argc, char** argv){
-    if(argc != 3){
-        printf("Use: MIPSsim inputfilename outputfilename\n");
-        return 0;
-    }
-    freopen(argv[2],"w",stdout);
-    freopen(argv[1],"r",stdin);
-    
+void parse(){
     string buf;
     int ins_len[6] = {6,5,5,5,5,6};
     int ins_num = 64; //当前扫描到的指令
@@ -600,6 +594,15 @@ int main(int argc, char** argv){
         ins_num+=4;
     }
     data_num=ins_num;
+}
+int main(int argc, char** argv){
+    if(argc != 3){
+        printf("Use: MIPSsim inputfilename outputfilename\n");
+        return 0;
+    }
+    freopen(argv[2],"w",stdout);
+    freopen(argv[1],"r",stdin);
+    parse();
     pipeline_run();
     fclose(stdout);
     fclose(stdin);
