@@ -1,6 +1,6 @@
 # Disassembler_Simulator
 
-run with
+run  with
 
 > sh test.sh
 
